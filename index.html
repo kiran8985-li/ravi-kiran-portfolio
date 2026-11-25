@@ -205,11 +205,11 @@ footer a{color:var(--gold)}
  .xk{display:none}
  .beat{padding:0 22px}
  .beat.center .sub{font-size:15.5px;margin-top:18px}
- .beat.left{justify-content:flex-end;padding:0 22px calc(78px + env(safe-area-inset-bottom))!important}
+ .beat.left{justify-content:flex-start;padding:74px 22px calc(76px + env(safe-area-inset-bottom))!important}
  .left .kick{font-size:11.5px;margin-bottom:8px!important}
  .beat.left .big{font-size:clamp(32px,9.5vw,40px)!important;line-height:1}
- .left .sub{font-size:14px!important;line-height:1.45;margin-top:8px!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
- .left .stats{margin-top:12px!important;gap:16px!important}
+ .left .sub{font-size:14px!important;line-height:1.45;margin-top:8px!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .left .stats{margin-top:auto!important;gap:16px!important}
  .left .stats b{font-size:24px!important}
  .left .stats span{font-size:11px!important;margin-top:4px;max-width:104px!important}
  .left .chips{margin-top:10px!important;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
@@ -218,10 +218,11 @@ footer a{color:var(--gold)}
  .left .btn{padding:10px 18px;font-size:14px}
  .beat.exp{justify-content:center;padding-top:0}
  .xhead .sub{font-size:14.5px}
- .xcard{bottom:calc(80px + env(safe-area-inset-bottom))!important}
+ .xcard{bottom:calc(76px + env(safe-area-inset-bottom))!important}
  .xcard h3{font-size:32px!important}
  .xcard .r{font-size:15px;margin:6px 0 8px}
- .xcard .d{font-size:14px!important}
+ .xcard .d{font-size:14px!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+ .xcard .tags{display:none!important}
  .xcard .tags{margin-top:10px}.xcard .tags i{font-size:12px;padding:4px 10px}
  #talk .btns{gap:10px}#talk .btn{padding:12px 20px;font-size:14.5px}
 }
@@ -771,14 +772,14 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
   addEventListener('pointermove',e=>{mouseIn=e.pointerType==='touch'?0:1;});
   gl={render(T,dt,time){
     U.uNode.value=expQ;U.uTime.value=time;U.uStage.value=kf(STAGE,T);U.uBright.value=kf(BRIGHT,T);
-    const sh=kf(SHIFT,T);if(mobile)U.uShift.value.set(0,sh*3.25);else U.uShift.value.set(sh*2.55,0);
+    const sh=kf(SHIFT,T);if(mobile)U.uShift.value.set(0,sh*0.6);else U.uShift.value.set(sh*2.55,0);
     renderer.setClearColor(kfc(BG,T,bgC));
     kfc(GLOW,T,gC);glowA.material.color.copy(gC);glowB.material.color.copy(gC).multiplyScalar(0.7);
     const nx=(mxp/innerWidth-.5)*2,ny=(myp/innerHeight-.5)*2;smx+=(nx-smx)*Math.min(1,dt*2.5);smy+=(ny-smy)*Math.min(1,dt*2.5);
     const ig=reduce?1:introG,igE=1-Math.pow(1-ig,3);U.uIntro.value=igE;
-    const mz=mobile?1.6:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*13,lx=0,ly=0;
+    const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*13,lx=0,ly=0;
     if(expBlend>0.001){const nY=6-3*expQ,nX=Math.sin(nY*0.45)*0.9;
-      const ex=nX*expClose,ey=(nY-(mobile?2.2:0))*expClose,ez=(17+(5.8-17)*expClose)*(mobile?1.15:1);
+      const ex=nX*expClose,ey=(nY-(mobile?0.25:0))*expClose,ez=(17+(5.8-17)*expClose)*(mobile?1.15:1);
       cx0+=(ex-cx0)*expBlend;cy0+=(ey-cy0)*expBlend;cz0+=(ez-cz0)*expBlend;lx=ex*expBlend;ly=ey*expBlend;}
     camLook.set(lx,ly,0);
     camera.position.set(cx0+(reduce?0:smx*0.5*(1-expClose*expBlend*0.6)),cy0+(reduce?0:-smy*0.3),cz0);camera.lookAt(camLook);
