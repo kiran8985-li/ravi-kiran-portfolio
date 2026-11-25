@@ -193,6 +193,43 @@ footer a{color:var(--gold)}
  .job{grid-template-columns:1fr;gap:4px}
  .contact{padding:44px 26px}
 }
+
+/* ---------- phones: compact layout, clear HUD ---------- */
+@media (max-width:800px){
+ #chapName{display:none}
+ #chap{left:20px;bottom:calc(22px + env(safe-area-inset-bottom))}
+ #chap b{font-size:24px}
+ #segs{left:64px;right:20px;bottom:calc(30px + env(safe-area-inset-bottom));transform:none;gap:6px}
+ #segs button{flex:1;width:auto;padding:8px 0}
+ .brand{left:20px;top:18px}#topnav{right:16px;top:14px}
+ .xk{display:none}
+ .beat{padding:0 22px}
+ .beat.center .sub{font-size:15.5px;margin-top:18px}
+ .beat.left{justify-content:flex-end;padding:0 22px calc(78px + env(safe-area-inset-bottom))!important}
+ .left .kick{font-size:11.5px;margin-bottom:8px!important}
+ .beat.left .big{font-size:clamp(32px,9.5vw,40px)!important;line-height:1}
+ .left .sub{font-size:14px!important;line-height:1.45;margin-top:8px!important;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+ .left .stats{margin-top:12px!important;gap:16px!important}
+ .left .stats b{font-size:24px!important}
+ .left .stats span{font-size:11px!important;margin-top:4px;max-width:104px!important}
+ .left .chips{margin-top:10px!important;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 82%,transparent);mask-image:linear-gradient(90deg,#000 82%,transparent)}
+ .left .chips i{font-size:12px;padding:4px 10px;white-space:nowrap;animation:none}
+ .left .btns{margin-top:12px!important}
+ .left .btn{padding:10px 18px;font-size:14px}
+ .beat.exp{justify-content:center;padding-top:0}
+ .xhead .sub{font-size:14.5px}
+ .xcard{bottom:calc(80px + env(safe-area-inset-bottom))!important}
+ .xcard h3{font-size:32px!important}
+ .xcard .r{font-size:15px;margin:6px 0 8px}
+ .xcard .d{font-size:14px!important}
+ .xcard .tags{margin-top:10px}.xcard .tags i{font-size:12px;padding:4px 10px}
+ #talk .btns{gap:10px}#talk .btn{padding:12px 20px;font-size:14.5px}
+}
+@media (max-width:800px) and (max-height:640px){
+ .left .stats span{display:none}.left .chips{display:none}
+ .beat.left .big{font-size:30px!important}
+ .xcard .tags{display:none}
+}
 @media (prefers-reduced-motion:reduce){#grain,.chips i,#cue i{animation:none}}
 </style>
 </head>
@@ -246,7 +283,7 @@ footer a{color:var(--gold)}
  </section>
 
  <section class="beat left" data-a="4.45" data-b="5.9" data-key="viva">
-  <p class="kick">03 · The work · 01 · Final-year project, 2024</p>
+  <p class="kick">03 · The work · 01<span class="xk"> · Final-year project, 2024</span></p>
   <h2 class="split big">VIVA</h2>
   <p class="sub">An AI voice assistant that gives emotional support to people dealing with grief. I designed the complete front-end UI and its calm, empathetic visual language, then built it in HTML and CSS.</p>
   <div class="stats"><div><b class="count" data-to="2">0</b><span>people on the team, under faculty mentorship</span></div><div><b>UI + code</b><span>Figma design to a working HTML and CSS front end</span></div></div>
@@ -273,7 +310,7 @@ footer a{color:var(--gold)}
  </section>
 
  <section class="beat center exp" data-a="8.7" data-b="10.9" data-exp>
-  <div class="xhead"><p class="kick">03 · The work · Where I've practised it</p><h2 class="split big">Experience</h2><p class="sub">Five roles from 2021 to today: logistics, e-commerce, recruitment, events and industry training. Keep scrolling to fly to each one.</p></div>
+  <div class="xhead"><p class="kick">03 · The work<span class="xk"> · Where I've practised it</span></p><h2 class="split big">Experience</h2><p class="sub">Five roles from 2021 to today: logistics, e-commerce, recruitment, events and industry training. Keep scrolling to fly to each one.</p></div>
   <div class="xcard l"><i class="wire"></i><div class="in"><p class="y">08/2024 – 01/2025 · London</p><h3>Tech Mahindra SMART</h3><p class="r">UI/UX Development Trainee</p><p class="d">Industry training in design thinking and the full product design lifecycle. Responsive web and mobile interfaces in Figma, built to accessibility standards and refined from user feedback.</p><div class="tags"><i>Design thinking</i><i>Figma</i><i>Accessibility</i></div></div></div>
   <div class="xcard r"><i class="wire"></i><div class="in"><p class="y">01/2024 – 03/2024 · Visakhapatnam</p><h3>RINL</h3><p class="r">Product Design Intern (UI/UX)</p><p class="d">Rebuilt a logistics admin panel for 500+ steel yards around how operators really work. Task time down 30%, processing time down 40%.</p><div class="tags"><i>Operator interviews</i><i>Personas</i><i>Journey maps</i></div></div></div>
   <div class="xcard l"><i class="wire"></i><div class="in"><p class="y">06/2023 – 10/2023 · Visakhapatnam</p><h3>HMI Engineering Services</h3><p class="r">UI/UX Design Intern</p><p class="d">Designed an online bookstore end to end: sign-up, listings, checkout and empty states. Set up a design system foundation and ran moderated usability tests.</p><div class="tags"><i>E-commerce</i><i>Design system</i><i>Usability tests</i></div></div></div>
@@ -718,7 +755,7 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
   // post
   let composer=null,bloom=null;
   try{if(true)throw 0;/* bloom washed the blacks out; glow is in the shaders instead */composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),lowPower?0.45:0.55,0.12,0.2);composer.addPass(bloom);composer.addPass(new OutputPass());}catch(e){composer=null;}
-  function resize(){renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(composer)composer.setSize(innerWidth,innerHeight);U.uPR.value=renderer.getPixelRatio();}
+  let lastW=0,lastH=0;function resize(){if(mobile&&innerWidth===lastW&&Math.abs(innerHeight-lastH)<160)return;lastW=innerWidth;lastH=innerHeight;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(composer)composer.setSize(innerWidth,innerHeight);U.uPR.value=renderer.getPixelRatio();}
   addEventListener('resize',resize);resize();
   // keyframes
   const kf=(arr,T)=>{if(T<=arr[0][0])return arr[0][1];for(let i=1;i<arr.length;i++){if(T<=arr[i][0]){const a=arr[i-1],b=arr[i];return a[1]+(b[1]-a[1])*sm(0,1,(T-a[0])/(b[0]-a[0]));}}return arr[arr.length-1][1];};
