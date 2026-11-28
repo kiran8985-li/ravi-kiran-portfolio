@@ -130,21 +130,18 @@ h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;margin:0;letter-spac
 @keyframes curdown{0%{scale:.6}60%{scale:1.5;border-color:#FFD9A0}100%{scale:1}}
 body.past #cur,body.past #dot{display:none}
 @media (hover:none){#cur,#dot{display:none}}
-#loader{--lp:0;position:fixed;inset:0;z-index:30;background:#07080C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 1.2s .1s ease,visibility 0s 1.4s}
+#loader{position:fixed;inset:0;z-index:30;background:#07080C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 1.2s .1s ease,visibility 0s 1.4s}
 #loader.done{opacity:0;visibility:hidden}
 #loader .ldring{transition:transform 1.4s cubic-bezier(.55,0,.15,1),opacity .9s .15s}
 #loader span,#loader em{transition:transform 1s cubic-bezier(.5,0,.15,1),opacity .6s}
 #loader.done .ldring{transform:scale(3.4);opacity:0}
 #loader.done span,#loader.done em{transform:translateY(16px);opacity:0}
-.ldring{position:relative;width:clamp(150px,24vw,220px);aspect-ratio:1;display:grid;place-items:center;margin-bottom:10px}
-.ldring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.ldring circle{fill:none;stroke-width:1.5}
-.ldring .bg{stroke:rgba(255,255,255,.1)}
-.ldring .fg{stroke:var(--gold);stroke-linecap:round;stroke-dasharray:339.3px;stroke-dashoffset:calc(339.3px * (1 - var(--lp)));filter:drop-shadow(0 0 6px rgba(231,196,143,.75))}
+.ldring{position:relative;width:clamp(110px,18vw,150px);aspect-ratio:1;display:grid;place-items:center;margin-bottom:14px;background:radial-gradient(circle at center,rgba(231,196,143,.34) 0,rgba(231,196,143,.1) 34%,transparent 62%)}
+.ldring .core{width:14px;height:14px;border-radius:50%;background:#fff6e0;box-shadow:0 0 14px 4px rgba(231,196,143,.85);animation:breathe 1.9s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.8);opacity:.8}50%{transform:scale(1.5);opacity:1}}
 .ldring::before{content:"";position:absolute;inset:-16px;border-radius:50%;border:1px dashed rgba(231,196,143,.22);animation:spin 16s linear infinite}
 .ldring::after{content:"";position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle at 50% 0,var(--gold) 0 3px,transparent 4px);animation:spin 3.2s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-#loader b{font-family:Fraunces,serif;font-size:clamp(40px,7vw,62px);font-weight:600;color:var(--gold);line-height:1}
 #loader span{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#9C9588}
 #loader em{font-style:normal;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:#625e55}
 body.past #flash,body.past #hud,body.past #stage,body.past #bars,body.past #vig,body.past #grain{visibility:hidden}
@@ -334,11 +331,11 @@ body.past #prog{opacity:1}
  .numbers{grid-template-columns:1fr 1fr}.numbers>div{padding:20px 12px 18px 20px}.numbers>div:nth-child(odd){padding-left:0;border-left:0}.numbers>div:nth-child(n+3){border-top:1px solid var(--line)}
  .marq{margin-top:48px;padding:16px 0}
 }
-@media (prefers-reduced-motion:reduce){.btn.solid,.marq .track,.contact,#hint i,#chapNum.roll,#chapName.roll,.ldring::before,.ldring::after{animation:none}.skills i{opacity:1;animation:none!important}.shot{translate:none!important}}
+@media (prefers-reduced-motion:reduce){.btn.solid,.marq .track,.contact,#hint i,#chapNum.roll,#chapName.roll,.ldring::before,.ldring::after,.ldring .core{animation:none}.skills i{opacity:1;animation:none!important}.shot{translate:none!important}}
 </style>
 </head>
 <body>
-<div id="loader"><div class="ldring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="bg" cx="60" cy="60" r="54"/><circle class="fg" cx="60" cy="60" r="54"/></svg><b id="ldNum">0</b></div><span>Ravi Kiran Terikoti</span><em>UI/UX · Product design</em></div>
+<div id="loader"><div class="ldring"><i class="core"></i></div><span>Ravi Kiran Terikoti</span><em>UI/UX · Product design</em></div>
 <canvas id="gl" aria-hidden="true"></canvas>
 <div id="vig"></div>
 <div id="grain"></div>
@@ -625,9 +622,9 @@ addEventListener('pointermove',e=>{mxp=e.clientX;myp=e.clientY;if(e.pointerType=
 $$('.mag').forEach(el=>{el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.25}px,${(e.clientY-r.top-r.height/2)*.35}px)`;});el.addEventListener('pointerleave',()=>el.style.transform='');});
 
 /* ---------- loader ---------- */
-let ldDone=false,ldReady=false,ldShown=0,ldStart=performance.now();const ldEl=$('#loader');
-function finishLoader(){ldReady=true;}/* the page is ready: let the ring fill, then open */
-function openLoader(){if(ldDone)return;ldDone=true;$('#ldNum').textContent='100';ldEl.style.setProperty('--lp','1');setTimeout(()=>{ldEl.classList.add('done');introOn=true;},200);}
+let ldDone=false,ldReady=false,ldStart=performance.now();const ldEl=$('#loader');
+function finishLoader(){ldReady=true;}/* the page is ready: open once the spark has had a moment */
+function openLoader(){if(ldDone)return;ldDone=true;setTimeout(()=>{ldEl.classList.add('done');introOn=true;},200);}
 setTimeout(openLoader,6000);
 
 /* ---------- three.js particle film ---------- */
@@ -958,8 +955,7 @@ let Ts=0,last=performance.now(),time=0;
 function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(0.1,(now-last)/1000);last=now;time+=dt;
-  if(!ldDone){const tg=ldReady?100:Math.min(86,(now-ldStart)/24);ldShown+=(tg-ldShown)*Math.min(1,dt*(ldReady?6:2.5));if(reduce&&ldReady)ldShown=100;
-    if(ldReady&&ldShown>99.3&&now-ldStart>1500)openLoader();else{$('#ldNum').textContent=Math.min(99,Math.floor(ldShown));ldEl.style.setProperty('--lp',(Math.min(99,ldShown)/100).toFixed(3));}}
+  if(!ldDone&&ldReady&&now-ldStart>1200)openLoader();
   /* the intro runs on accumulated frame time, so a startup hitch can't skip part of it */
   if(introOn&&!reduce){introT+=dt;introG=clamp(introT/4.4,0,1);introP=clamp((introT-1.5)/1.8,0,1);}
   const fs=filmScroll();const past=scrollY>fs+innerHeight*0.35;
