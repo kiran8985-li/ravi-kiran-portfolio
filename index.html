@@ -575,7 +575,7 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!reduce){$$('.shot').
 const TMAX=11.6;let expNode=0;
 const beats=$$('.beat').map(el=>({el,exp:el.hasAttribute('data-exp'),a:+el.dataset.a,b:+el.dataset.b,intro:el.hasAttribute('data-intro'),key:el.dataset.key,
   splits:[...el.querySelectorAll('.split')],counts:[...el.querySelectorAll('.count')],rows:[...el.querySelectorAll('.xrow')],v:-1}));
-let introP=reduce?1:0,introOn=false,introT=-0.7,introG=reduce?1:0,introFlash=false;
+let introP=reduce?1:0,introOn=false,introT=-1.1,introG=reduce?1:0,introFlash=false;
 let expQ=0,expClose=0,expBlend=0;const EXP0=9.25,EXP1=10.6;
 const xcards=$$('.xcard'),xBeat=$('.beat.exp');let lastXI=-2;
 function updExp(T){const e=clamp((T-EXP0)/(EXP1-EXP0),0,1),x=e*4.999,i=Math.floor(x),f=x-i;
@@ -621,8 +621,25 @@ let mxp=innerWidth/2,myp=innerHeight/2,cx=mxp,cy=myp;
 addEventListener('pointermove',e=>{mxp=e.clientX;myp=e.clientY;if(e.pointerType==='mouse'){document.body.classList.add('hasmouse');$('#dot').style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`;}const h=e.target.closest&&e.target.closest('a,button,.skills i');$('#cur').classList.toggle('hover',!!h);});
 $$('.mag').forEach(el=>{el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.25}px,${(e.clientY-r.top-r.height/2)*.35}px)`;});el.addEventListener('pointerleave',()=>el.style.transform='');});
 
+/* ---------- my name as points: sample the real headline so the sparks land exactly where the text appears ---------- */
+function sampleName(){
+  const h1=$('.beat[data-intro] h1.split');if(!h1)return null;
+  const chs=[...h1.querySelectorAll('.ch')];if(!chs.length)return null;
+  const beat=h1.closest('.beat'),pp=h1.style.getPropertyValue('--p'),pt=beat.style.transform;
+  h1.style.setProperty('--p','1');beat.style.transform='none';/* measure the resting layout, not the entrance pose */
+  const cs=getComputedStyle(h1),fs=parseFloat(cs.fontSize),rects=chs.map(c=>c.getBoundingClientRect());
+  h1.style.setProperty('--p',pp||'0');beat.style.transform=pt;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;rects.forEach(r=>{x0=Math.min(x0,r.left);y0=Math.min(y0,r.top);x1=Math.max(x1,r.right);y1=Math.max(y1,r.bottom);});
+  const pad=24,w=Math.ceil(x1-x0)+pad*2,h=Math.ceil(y1-y0)+pad*2;if(w<20||h<20||w>4000||h>2000)return null;
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const g=cv.getContext('2d',{willReadFrequently:true});
+  g.font=`${cs.fontWeight} ${fs}px ${cs.fontFamily}`;g.fillStyle='#fff';g.textBaseline='alphabetic';
+  const m=g.measureText('Hg'),A=m.fontBoundingBoxAscent||fs*0.95,D=m.fontBoundingBoxDescent||fs*0.25;
+  chs.forEach((c,i)=>{const r=rects[i];g.fillText(c.textContent,r.left-x0+pad,r.top+(r.height-(A+D))/2+A-y0+pad);});
+  const d=g.getImageData(0,0,w,h).data,pts=[];for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>110)pts.push(x,y);
+  return pts.length>40?{pts,x0,y0,pad}:null;
+}
 /* ---------- loader ---------- */
-let ldDone=false,ldReady=false,ldStart=performance.now();const ldEl=$('#loader');
+let ldDone=false,ldReady=false,nameReady=false,ldStart=performance.now();const ldEl=$('#loader');
 function finishLoader(){ldReady=true;}/* the page is ready: open once the spark has had a moment */
 function openLoader(){if(ldDone)return;ldDone=true;setTimeout(()=>{ldEl.classList.add('done');introOn=true;},200);}
 setTimeout(openLoader,6000);
@@ -702,16 +719,23 @@ try{
     GAL[i*3]=x;GAL[i*3+1]=y;GAL[i*3+2]=z;aGal[i]=Math.min(1,g);}
   geo.setAttribute('position',new THREE.BufferAttribute(GAL,3));geo.setAttribute('aG',new THREE.BufferAttribute(aGal,1));
   [T0,T1,T2,T3,T4,T5,T6,T7].forEach((a,i)=>geo.setAttribute('t'+(i+1),new THREE.BufferAttribute(a,3)));geo.setAttribute('aNode',new THREE.BufferAttribute(aNode,1));
+  const TNa=new Float32Array(N*3),tnAttr=new THREE.BufferAttribute(TNa,3);geo.setAttribute('tn',tnAttr);
+  const applyName=()=>{try{const S=sampleName();
+    if(S){const cz=10.5*(mobile?1.75:1),th=Math.tan(22.5*Math.PI/180)*cz,hh=innerHeight/2,m=S.pts.length/2,rr=rnd(5);
+      for(let i=0;i<N;i++){const k=Math.floor(rr()*m)*2,px=S.pts[k]+rr()-0.5,py=S.pts[k+1]+rr()-0.5;
+        TNa[i*3]=((px-S.pad+S.x0)-innerWidth/2)/hh*th;TNa[i*3+1]=-((py-S.pad+S.y0)-hh)/hh*th;TNa[i*3+2]=(rr()-0.5)*0.25;}}
+    else TNa.set(GAL);tnAttr.needsUpdate=true;}catch(e){TNa.set(GAL);tnAttr.needsUpdate=true;}nameReady=true;};
+  Promise.resolve(document.fonts&&document.fonts.ready).then(()=>requestAnimationFrame(applyName)).catch(()=>{nameReady=true;});
   geo.setAttribute('aR',new THREE.BufferAttribute(aR,1));
   geo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),30);
   const U={uTime:{value:0},uStage:{value:0},uSize:{value:mobile?46:(lowPower?34:26)},uPR:{value:renderer.getPixelRatio()},uShift:{value:new THREE.Vector2()},uMouse:{value:new THREE.Vector3(99,99,0)},uMouseOn:{value:0},uBright:{value:1},uSpeed:{value:0},uShockT:{value:-100},uShockP:{value:new THREE.Vector2(0,0)},uVel:{value:new THREE.Vector2()},uTr:{value:[0,1,2,3,4].map(()=>new THREE.Vector3(99,99,0))}};
   const cols=[[1,1,1],[1.0,.82,.56],[1.0,.32,.24],[.32,.92,.82],[.62,.56,1.0],[.36,.9,.66],[1.0,.52,.38],[1.0,.8,.52],[1.0,.78,.44]];U.uNode={value:0};
-  cols.forEach((c,i)=>{if(i)U['c'+i]={value:new THREE.Vector3(...c)};});U.uIntro={value:reduce?1:0};U.uPulse={value:0};
+  cols.forEach((c,i)=>{if(i)U['c'+i]={value:new THREE.Vector3(...c)};});U.uIntro={value:reduce?1:0};U.uPulse={value:0};U.uBang={value:reduce?99:-3};
   const mat=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
    vertexShader:`
-uniform float uTime,uStage,uSize,uPR,uMouseOn,uBright,uSpeed,uShockT,uNode,uIntro,uPulse;uniform vec2 uShift,uShockP,uVel;uniform vec3 uMouse;uniform vec3 uTr[5];
+uniform float uTime,uStage,uSize,uPR,uMouseOn,uBright,uSpeed,uShockT,uNode,uIntro,uPulse,uBang;uniform vec2 uShift,uShockP,uVel;uniform vec3 uMouse;uniform vec3 uTr[5];
 uniform vec3 c1,c2,c3,c4,c5,c6,c7,c8;
-attribute vec3 t1,t2,t3,t4,t5,t6,t7,t8;attribute float aR,aNode,aG;
+attribute vec3 t1,t2,t3,t4,t5,t6,t7,t8,tn;attribute float aR,aNode,aG;
 varying vec3 vCol;varying float vA;
 vec3 rotY(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(c*p.x+s*p.z,p.y,-s*p.x+c*p.z);}
 vec3 rotX(vec3 p,float a){float c=cos(a),s=sin(a);return vec3(p.x,c*p.y-s*p.z,s*p.y+c*p.z);}
@@ -721,11 +745,26 @@ void main(){
  float w1=W(1.),w2=W(2.),w3=W(3.),w4=W(4.),w5=W(5.),w6=W(6.),w7=W(7.),w8=W(8.);
  // 0: the galaxy, spinning faster near the core, spiralling in on load
  vec3 g=position;float gr=length(g.xz);
- g=rotY(g,uTime*0.14/(0.3+gr*0.45)+(1.0-uIntro)*7.0/(0.3+gr*0.35));
- float bl=1.0-pow(1.0-uIntro,2.2);/* the galaxy blooms out of one bright point */
- g*=mix(0.03,1.0,bl);g.y+=(1.0-uIntro)*(aR-0.5)*1.2;
+ g=rotY(g,uTime*0.14/(0.3+gr*0.45));
  g=rotZ(rotX(g,-1.12),0.3);
  vec3 p=g;
+ /* the opening: a spark rises, bursts, the sparks gather into my name, then the name opens out into the galaxy */
+ float iTb=uBang,iSd=1.0;
+ if(iTb<6.5){
+  float h1=fract(aR*91.7),h2=fract(aR*37.3),h3=fract(aR*53.9);
+  float ang=h1*6.28318,spd=0.06+pow(h2,1.6)*5.6;
+  vec3 dirv=vec3(cos(ang),sin(ang),(h3-0.5)*0.7);
+  float te=max(iTb,0.0);
+  float rr=clamp((iTb+1.0)/1.0-aR*0.3,0.0,1.0);
+  vec3 rise=vec3((h2-0.5)*(0.05+aR*0.6)*(1.0-rr*rr),-7.5*pow(1.0-rr,2.0),(h3-0.5)*0.2*(1.0-rr));
+  vec3 bp=rise+rotZ(dirv*spd*(1.0-exp(-te*2.8)),te*0.5*(1.0-spd*0.08));
+  float sc=smoothstep(0.8+h3*0.4,2.2+h3*0.5,iTb);
+  vec3 dd=tn-bp;vec3 side=normalize(vec3(-dd.y,dd.x,0.0)+vec3(0.0001));
+  vec3 s1=mix(bp,tn,sc)+side*sin(sc*3.14159)*(0.5+h1*1.5);
+  iSd=smoothstep(3.4+h1*0.5,5.0+h1*0.8,iTb);
+  vec3 d2=g-s1;vec3 side2=normalize(vec3(-d2.y,d2.x,0.0)+vec3(0.0001));
+  p=mix(s1,g,iSd)+side2*sin(iSd*3.14159)*0.5*(0.3+h2);
+ }
  p=mix(p,rotY(t1,uTime*0.16),w1);
  p=mix(p,t2,w2);
  p=mix(p,t3+vec3(0.,sin(uTime*0.6+t3.x)*0.03,0.),w3);
@@ -737,6 +776,7 @@ void main(){
  vec3 c0=mix(vec3(1.0,0.82,0.55),vec3(0.55,0.68,1.0),smoothstep(0.08,0.55,aG));
  if(fract(aR*97.0)>0.95&&aG>0.2)c0=vec3(1.0,0.42,0.68);
  c0*=1.0+(1.0-smoothstep(0.0,0.18,aG))*1.1;
+ if(iTb<6.5){vec3 ic=mix(vec3(1.0,0.97,0.9),vec3(1.0,0.78,0.42),smoothstep(0.0,1.4,iTb))*mix(1.5,0.8,smoothstep(1.0,2.6,iTb));c0=mix(ic,c0,iSd);}
  vec3 col=c0;col=mix(col,c1,w1);col=mix(col,c2,w2);col=mix(col,c3,w3);col=mix(col,c4,w4);col=mix(col,c5,w5);col=mix(col,c6,w6);col=mix(col,c7,w7);col=mix(col,c8,w8);
  float turb=(w1*(1.-w1)+w2*(1.-w2)+w3*(1.-w3)+w4*(1.-w4)+w5*(1.-w5)+w6*(1.-w6)+w7*(1.-w7)+w8*(1.-w8))*4.0;
  float act=(aNode>-0.5)?exp(-pow(aNode-uNode,2.0)*4.0)*w7*(1.0-w8):0.0;
@@ -895,15 +935,16 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
     renderer.setClearColor(kfc(BG,T,bgC));
     kfc(GLOW,T,gC);glowA.material.color.copy(gC);glowB.material.color.copy(gC).multiplyScalar(0.7);
     const nx=(mxp/innerWidth-.5)*2,ny=(myp/innerHeight-.5)*2;smx+=(nx-smx)*Math.min(1,dt*2.5);smy+=(ny-smy)*Math.min(1,dt*2.5);
-    const ig=reduce?1:introG,igE=0.5*(ig*ig*ig*(ig*(ig*6-15)+10))+0.5*(1-Math.pow(1-ig,3));U.uIntro.value=igE;
-    if(!introFlash&&introT>0.05&&!reduce){introFlash=true;U.uPulse.value=1.2;}
-    const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*5,lx=0,ly=0;
+    const ig=reduce?1:introG;U.uIntro.value=reduce?1:clamp(introT/4.5,0,1);U.uBang.value=reduce?99:introT;
+    if(!introFlash&&introT>0&&!reduce){introFlash=true;U.uPulse.value=1.2;blastAt(innerWidth/2,innerHeight/2);}/* the bang */
+    const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz,lx=0,ly=0;
     if(expBlend>0.001){const nY=6-3*expQ,nX=Math.sin(nY*0.45)*0.9;
       const ex=nX*expClose,ey=(nY-(mobile?0.25:0))*expClose,ez=(17+(5.8-17)*expClose)*(mobile?1.15:1);
       cx0+=(ex-cx0)*expBlend;cy0+=(ey-cy0)*expBlend;cz0+=(ez-cz0)*expBlend;lx=ex*expBlend;ly=ey*expBlend;}
     camLook.set(lx,ly,0);
-    const sw=reduce?0:(mobile?1:0.55)*(1-expClose*expBlend*0.8);
-    camera.position.set(cx0+(reduce?0:smx*0.5*(1-expClose*expBlend*0.6))+Math.sin(time*0.31)*0.2*sw,cy0+(reduce?0:-smy*0.3)+Math.cos(time*0.23)*0.13*sw,cz0);camera.lookAt(camLook);
+    const par=reduce?1:Math.max(clamp((introT-3.8)/1.8,0,1),clamp(T/0.25,0,1));/* camera stays put while the name forms, so the sparks line up with the text */
+    const sw=(reduce?0:(mobile?1:0.55)*(1-expClose*expBlend*0.8))*par;
+    camera.position.set(cx0+(reduce?0:smx*0.5*(1-expClose*expBlend*0.6))*par+Math.sin(time*0.31)*0.2*sw,cy0+(reduce?0:-smy*0.3)*par+Math.cos(time*0.23)*0.13*sw,cz0);camera.lookAt(camLook);
     if(!reduce)camera.rotation.z=Math.sin(time*0.25)*0.01;
     camera.updateMatrixWorld();v3.set(mxp/innerWidth*2-1,-(myp/innerHeight)*2+1,0.5).unproject(camera);dir.copy(v3).sub(camera.position).normalize();const dd=-camera.position.z/dir.z;U.uMouse.value.copy(camera.position).addScaledVector(dir,dd);
     U.uMouseOn.value+=((mobile||reduce?0:mouseIn)-U.uMouseOn.value)*Math.min(1,dt*3);
@@ -923,7 +964,7 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
       shock2.material.opacity=live&&age<2?Math.max(0,(1-age/2))*0.55:0;shock2.scale.setScalar(0.1+Math.max(0,age)*3.2);
       const sc=live?(age<0.12?Math.max(0.01,1-age/0.12):sm(0.5,1.3,age)):1;asteroid.scale.setScalar(sc);
       if(live&&age<0.7&&!reduce){const k=Math.exp(-age*6)*0.22;camera.position.x+=(Math.random()-.5)*k;camera.position.y+=(Math.random()-.5)*k;}}TU.uOn.value+=((showA?Math.min(1,0.35+aSpeed):0)-TU.uOn.value)*Math.min(1,dt*5);
-    camera.lookAt(camLook);if(!reduce)camera.rotation.z+=Math.sin(time*0.25)*0.01-scrollV*0.014+(1-igE)*0.28;
+    camera.lookAt(camLook);if(!reduce)camera.rotation.z+=Math.sin(time*0.25)*0.01-scrollV*0.014;
     // stars fly past as you scroll
     const vT=dt>0?Math.abs(T-lastTs)/dt:0;lastTs=T;warp+=(clamp(vT*0.8,0,1.5)-warp)*Math.min(1,dt*4);
     SU.uTravel.value=T*5.5+time*0.35+(reduce?0:(1-Math.pow(1-ig,3))*60);SU.uWarp.value=warp+(reduce?0:(1-ig)*1.3);
@@ -955,9 +996,9 @@ let Ts=0,last=performance.now(),time=0;
 function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(0.1,(now-last)/1000);last=now;time+=dt;
-  if(!ldDone&&ldReady&&now-ldStart>1200)openLoader();
+  if(!ldDone&&ldReady&&(nameReady||!gl)&&now-ldStart>1200)openLoader();
   /* the intro runs on accumulated frame time, so a startup hitch can't skip part of it */
-  if(introOn&&!reduce){introT+=dt;introG=clamp(introT/4.4,0,1);introP=clamp((introT-1.5)/1.8,0,1);}
+  if(introOn&&!reduce){introT+=dt*(scrollY>80&&introT<5.2?5:1);introG=clamp((introT+1.0)/4.2,0,1);introP=clamp((introT-3.4)/1.6,0,1);}
   const fs=filmScroll();const past=scrollY>fs+innerHeight*0.35;
   document.body.classList.toggle('past',past);
   const target=clamp(scrollY/fs,0,1)*TMAX;
