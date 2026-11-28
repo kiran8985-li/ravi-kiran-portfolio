@@ -130,9 +130,12 @@ h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;margin:0;letter-spac
 @keyframes curdown{0%{scale:.6}60%{scale:1.5;border-color:#FFD9A0}100%{scale:1}}
 body.past #cur,body.past #dot{display:none}
 @media (hover:none){#cur,#dot{display:none}}
-@property --hole{syntax:'<percentage>';inherits:false;initial-value:0%}
-#loader{--hole:0%;--lp:0;position:fixed;inset:0;z-index:30;background:#07080C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;-webkit-mask-image:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 10%),#000 var(--hole));mask-image:radial-gradient(circle at 50% 50%,transparent calc(var(--hole) - 10%),#000 var(--hole))}
-#loader.done{--hole:160%;visibility:hidden;transition:--hole 1.25s cubic-bezier(.65,0,.25,1),visibility 0s 1.3s}
+#loader{--lp:0;position:fixed;inset:0;z-index:30;background:#07080C;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 1.2s .1s ease,visibility 0s 1.4s}
+#loader.done{opacity:0;visibility:hidden}
+#loader .ldring{transition:transform 1.4s cubic-bezier(.55,0,.15,1),opacity .9s .15s}
+#loader span,#loader em{transition:transform 1s cubic-bezier(.5,0,.15,1),opacity .6s}
+#loader.done .ldring{transform:scale(3.4);opacity:0}
+#loader.done span,#loader.done em{transform:translateY(16px);opacity:0}
 .ldring{position:relative;width:clamp(150px,24vw,220px);aspect-ratio:1;display:grid;place-items:center;margin-bottom:10px}
 .ldring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .ldring circle{fill:none;stroke-width:1.5}
@@ -262,7 +265,8 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offse
 @keyframes flfade{0%{opacity:1}100%{opacity:0}}
 @keyframes flring{0%{opacity:1;width:12px;height:12px;margin:-6px 0 0 -6px;border-width:3px}100%{opacity:0;width:380px;height:380px;margin:-190px 0 0 -190px;border-width:1px}}
 /* every scene builds in layers: label tracks in, text rises, stats and chips pop one by one */
-.beat .kick{letter-spacing:calc(.16em + (1 - var(--k,1))*.4em)}
+.beat .kick{letter-spacing:calc(.16em + (1 - var(--kk,var(--k,1)))*.4em);opacity:clamp(0,calc(var(--kk,var(--k,1))*3),1)}
+h1.split .ch{filter:blur(calc((1 - clamp(0,calc(var(--p,0)*2.2 - var(--d)*1.2),1))*9px))}
 .beat .sub{opacity:clamp(0,calc(var(--k,1)*1.7 - .25),1);translate:0 calc((1 - var(--k,1))*30px - (1 - var(--e,1))*18px)}
 .beat .stats>div,.beat .chips i{--q:clamp(0,calc(var(--k,1)*2.3 - var(--i,0)*.28),1);opacity:var(--q);translate:0 calc((1 - var(--q))*20px - (1 - var(--e,1))*14px)}
 .beat .btns{opacity:clamp(0,calc(var(--k,1)*2 - .5),1);translate:0 calc((1 - var(--k,1))*44px - (1 - var(--e,1))*22px)}
@@ -574,7 +578,7 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!reduce){$$('.shot').
 const TMAX=11.6;let expNode=0;
 const beats=$$('.beat').map(el=>({el,exp:el.hasAttribute('data-exp'),a:+el.dataset.a,b:+el.dataset.b,intro:el.hasAttribute('data-intro'),key:el.dataset.key,
   splits:[...el.querySelectorAll('.split')],counts:[...el.querySelectorAll('.count')],rows:[...el.querySelectorAll('.xrow')],v:-1}));
-let introP=reduce?1:0,introStart=0,introG=reduce?1:0;
+let introP=reduce?1:0,introOn=false,introT=0,introG=reduce?1:0,introFlash=false;
 let expQ=0,expClose=0,expBlend=0;const EXP0=9.25,EXP1=10.6;
 const xcards=$$('.xcard'),xBeat=$('.beat.exp');let lastXI=-2;
 function updExp(T){const e=clamp((T-EXP0)/(EXP1-EXP0),0,1),x=e*4.999,i=Math.floor(x),f=x-i;
@@ -593,7 +597,7 @@ function updBeats(T){
     B.splits.forEach(s=>s.style.setProperty('--p',p.toFixed(3)));
     B.counts.forEach(c=>{const k=reduce?1:easeOut(clamp((ti-0.15)/0.35,0,1));c.textContent=(c.dataset.pre||'')+Math.round(+c.dataset.to*k)+(c.dataset.suf||'');});
     const kIn=reduce?1:(B.intro?easeOut(clamp((introP-0.5)/0.5,0,1)):easeOut(clamp((ti-0.02)/0.5,0,1)));
-    B.el.style.setProperty('--k',kIn.toFixed(3));B.el.style.setProperty('--e',(reduce?1:fo).toFixed(3));
+    B.el.style.setProperty('--k',kIn.toFixed(3));if(B.intro)B.el.style.setProperty('--kk',(reduce?1:easeOut(clamp(introP/0.5,0,1))).toFixed(3));B.el.style.setProperty('--e',(reduce?1:fo).toFixed(3));
   }
 }
 const CH=[[0,'01','Who I am'],[2.5,'02','The problem'],[4.45,'03','The work'],[10.9,'04',"Let's talk"]];
@@ -621,9 +625,10 @@ addEventListener('pointermove',e=>{mxp=e.clientX;myp=e.clientY;if(e.pointerType=
 $$('.mag').forEach(el=>{el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.25}px,${(e.clientY-r.top-r.height/2)*.35}px)`;});el.addEventListener('pointerleave',()=>el.style.transform='');});
 
 /* ---------- loader ---------- */
-let ldDone=false,ldStart=performance.now();const ldEl=$('#loader');
-function finishLoader(){if(ldDone)return;ldDone=true;$('#ldNum').textContent='100';ldEl.style.setProperty('--lp','1');setTimeout(()=>{$('#loader').classList.add('done');introStart=performance.now();},250);}
-setTimeout(finishLoader,6000);
+let ldDone=false,ldReady=false,ldShown=0,ldStart=performance.now();const ldEl=$('#loader');
+function finishLoader(){ldReady=true;}/* the page is ready: let the ring fill, then open */
+function openLoader(){if(ldDone)return;ldDone=true;$('#ldNum').textContent='100';ldEl.style.setProperty('--lp','1');setTimeout(()=>{ldEl.classList.add('done');introOn=true;},200);}
+setTimeout(openLoader,6000);
 
 /* ---------- three.js particle film ---------- */
 let gl=null;
@@ -892,7 +897,8 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
     renderer.setClearColor(kfc(BG,T,bgC));
     kfc(GLOW,T,gC);glowA.material.color.copy(gC);glowB.material.color.copy(gC).multiplyScalar(0.7);
     const nx=(mxp/innerWidth-.5)*2,ny=(myp/innerHeight-.5)*2;smx+=(nx-smx)*Math.min(1,dt*2.5);smy+=(ny-smy)*Math.min(1,dt*2.5);
-    const ig=reduce?1:introG,igE=1-Math.pow(1-ig,3);U.uIntro.value=igE;
+    const ig=reduce?1:introG,igE=0.5*(ig*ig*ig*(ig*(ig*6-15)+10))+0.5*(1-Math.pow(1-ig,3));U.uIntro.value=igE;
+    if(!introFlash&&introT>0.9&&!reduce){introFlash=true;U.uPulse.value=1.4;}
     const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*13,lx=0,ly=0;
     if(expBlend>0.001){const nY=6-3*expQ,nX=Math.sin(nY*0.45)*0.9;
       const ex=nX*expClose,ey=(nY-(mobile?0.25:0))*expClose,ez=(17+(5.8-17)*expClose)*(mobile?1.15:1);
@@ -919,10 +925,10 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
       shock2.material.opacity=live&&age<2?Math.max(0,(1-age/2))*0.55:0;shock2.scale.setScalar(0.1+Math.max(0,age)*3.2);
       const sc=live?(age<0.12?Math.max(0.01,1-age/0.12):sm(0.5,1.3,age)):1;asteroid.scale.setScalar(sc);
       if(live&&age<0.7&&!reduce){const k=Math.exp(-age*6)*0.22;camera.position.x+=(Math.random()-.5)*k;camera.position.y+=(Math.random()-.5)*k;}}TU.uOn.value+=((showA?Math.min(1,0.35+aSpeed):0)-TU.uOn.value)*Math.min(1,dt*5);
-    camera.lookAt(camLook);if(!reduce)camera.rotation.z+=Math.sin(time*0.25)*0.01-scrollV*0.014;
+    camera.lookAt(camLook);if(!reduce)camera.rotation.z+=Math.sin(time*0.25)*0.01-scrollV*0.014+(1-igE)*0.28;
     // stars fly past as you scroll
     const vT=dt>0?Math.abs(T-lastTs)/dt:0;lastTs=T;warp+=(clamp(vT*0.8,0,1.5)-warp)*Math.min(1,dt*4);
-    SU.uTravel.value=T*5.5+time*0.35;SU.uWarp.value=warp;
+    SU.uTravel.value=T*5.5+time*0.35+(reduce?0:(1-Math.pow(1-ig,3))*60);SU.uWarp.value=warp+(reduce?0:(1-ig)*1.3);
     kfc(NEB.map(a=>[a[0],a[1]]),T,nA);kfc(NEB.map(a=>[a[0],a[2]]),T,nB);NU.uA.value.copy(nA);NU.uB.value.copy(nB);
     flares.forEach(f=>{const u=f.userData;f.scale.setScalar(u.s*(0.55+0.45*Math.abs(Math.sin(time*u.sp+u.ph))));});
     nextShoot-=dt;if(nextShoot<=0&&!reduce){spawnShooter();nextShoot=1.8+Math.random()*3.5;}
@@ -951,17 +957,19 @@ let Ts=0,last=performance.now(),time=0;
 function loop(now){
   requestAnimationFrame(loop);
   const dt=Math.min(0.1,(now-last)/1000);last=now;time+=dt;
-  if(!ldDone){const k=Math.min(99,Math.round((now-ldStart)/18));$('#ldNum').textContent=k;ldEl.style.setProperty('--lp',(k/100).toFixed(2));}
-  if(introStart&&!reduce){introG=clamp((now-introStart)/3600,0,1);introP=clamp((now-introStart-1300)/1700,0,1);}
+  if(!ldDone){const tg=ldReady?100:Math.min(86,(now-ldStart)/24);ldShown+=(tg-ldShown)*Math.min(1,dt*(ldReady?6:2.5));if(reduce&&ldReady)ldShown=100;
+    if(ldReady&&ldShown>99.3&&now-ldStart>1500)openLoader();else{$('#ldNum').textContent=Math.min(99,Math.floor(ldShown));ldEl.style.setProperty('--lp',(Math.min(99,ldShown)/100).toFixed(3));}}
+  /* the intro runs on accumulated frame time, so a startup hitch can't skip part of it */
+  if(introOn&&!reduce){introT+=dt;introG=clamp(introT/4.8,0,1);introP=clamp((introT-1.6)/1.8,0,1);}
   const fs=filmScroll();const past=scrollY>fs+innerHeight*0.35;
   document.body.classList.toggle('past',past);
   const target=clamp(scrollY/fs,0,1)*TMAX;
   Ts+=(target-Ts)*(reduce?1:1-Math.exp(-dt*5));
   cx+=(mxp-cx)*Math.min(1,dt*20);cy+=(myp-cy)*Math.min(1,dt*20);
   $('#cur').style.transform=`translate(${cx}px,${cy}px)`;
-  if(past){updPast();if(!ldDone)finishLoader();return;}
+  if(past){updPast();openLoader();return;}
   updHint(now);updBeats(Ts);updExp(Ts);updHud(Ts);
-  if(gl)gl.render(Ts,dt,time);else if(!ldDone)finishLoader();
+  if(gl)gl.render(Ts,dt,time);else finishLoader();
 }
 requestAnimationFrame(loop);
 /* test hook: ?t=6.5 jumps the film to that moment, ?s=experience jumps to a section */
