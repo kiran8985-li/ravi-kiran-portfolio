@@ -578,7 +578,7 @@ if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!reduce){$$('.shot').
 const TMAX=11.6;let expNode=0;
 const beats=$$('.beat').map(el=>({el,exp:el.hasAttribute('data-exp'),a:+el.dataset.a,b:+el.dataset.b,intro:el.hasAttribute('data-intro'),key:el.dataset.key,
   splits:[...el.querySelectorAll('.split')],counts:[...el.querySelectorAll('.count')],rows:[...el.querySelectorAll('.xrow')],v:-1}));
-let introP=reduce?1:0,introOn=false,introT=0,introG=reduce?1:0,introFlash=false;
+let introP=reduce?1:0,introOn=false,introT=-0.7,introG=reduce?1:0,introFlash=false;
 let expQ=0,expClose=0,expBlend=0;const EXP0=9.25,EXP1=10.6;
 const xcards=$$('.xcard'),xBeat=$('.beat.exp');let lastXI=-2;
 function updExp(T){const e=clamp((T-EXP0)/(EXP1-EXP0),0,1),x=e*4.999,i=Math.floor(x),f=x-i;
@@ -724,8 +724,9 @@ void main(){
  float w1=W(1.),w2=W(2.),w3=W(3.),w4=W(4.),w5=W(5.),w6=W(6.),w7=W(7.),w8=W(8.);
  // 0: the galaxy, spinning faster near the core, spiralling in on load
  vec3 g=position;float gr=length(g.xz);
- g=rotY(g,uTime*0.14/(0.3+gr*0.45)+(1.0-uIntro)*6.0/(0.3+gr*0.35));
- g*=1.0+(1.0-uIntro)*2.4;g.y+=(1.0-uIntro)*(aR-0.5)*5.0;
+ g=rotY(g,uTime*0.14/(0.3+gr*0.45)+(1.0-uIntro)*7.0/(0.3+gr*0.35));
+ float bl=1.0-pow(1.0-uIntro,2.2);/* the galaxy blooms out of one bright point */
+ g*=mix(0.03,1.0,bl);g.y+=(1.0-uIntro)*(aR-0.5)*1.2;
  g=rotZ(rotX(g,-1.12),0.3);
  vec3 p=g;
  p=mix(p,rotY(t1,uTime*0.16),w1);
@@ -765,7 +766,7 @@ void main(){
  gl_Position=projectionMatrix*mv;
  gl_PointSize=min(uSize*1.35*uPR*(0.5+aR*0.9)*(1.0+act*0.35)/(-mv.z),mix(34.0,20.0,w7*(1.0-w8))*uPR);
  vCol=col*(0.7+0.6*aR)*uBright*(1.0+act*0.55)*(1.0+uPulse*0.7)+vec3(1.0,0.7,0.35)*act*0.22+vec3(1.0,0.6,0.3)*(f+sh)*0.35;
- vA=(0.45+0.25*sin(uTime*1.7+aR*40.0))*(0.15+0.85*smoothstep(0.0,0.6,uIntro))*hz*(aNode<-1.5?1.0-0.5*w7*(1.0-w8):(aNode>-0.5?1.0-0.68*w7*(1.0-w8):1.0));
+ vA=(0.45+0.25*sin(uTime*1.7+aR*40.0))*(0.55+0.45*smoothstep(0.0,0.5,uIntro))*hz*(aNode<-1.5?1.0-0.5*w7*(1.0-w8):(aNode>-0.5?1.0-0.68*w7*(1.0-w8):1.0));
 }`,
    
 fragmentShader:`
@@ -898,8 +899,8 @@ void main(){float age=uTime-uBT;float L=1.7;float k=clamp(age/L,0.0,1.0);
     kfc(GLOW,T,gC);glowA.material.color.copy(gC);glowB.material.color.copy(gC).multiplyScalar(0.7);
     const nx=(mxp/innerWidth-.5)*2,ny=(myp/innerHeight-.5)*2;smx+=(nx-smx)*Math.min(1,dt*2.5);smy+=(ny-smy)*Math.min(1,dt*2.5);
     const ig=reduce?1:introG,igE=0.5*(ig*ig*ig*(ig*(ig*6-15)+10))+0.5*(1-Math.pow(1-ig,3));U.uIntro.value=igE;
-    if(!introFlash&&introT>0.9&&!reduce){introFlash=true;U.uPulse.value=1.4;}
-    const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*13,lx=0,ly=0;
+    if(!introFlash&&introT>0.05&&!reduce){introFlash=true;U.uPulse.value=1.2;}
+    const mz=mobile?1.75:1;let cx0=0,cy0=0,cz0=kf(CAMZ,T)*mz+(1-igE)*5,lx=0,ly=0;
     if(expBlend>0.001){const nY=6-3*expQ,nX=Math.sin(nY*0.45)*0.9;
       const ex=nX*expClose,ey=(nY-(mobile?0.25:0))*expClose,ez=(17+(5.8-17)*expClose)*(mobile?1.15:1);
       cx0+=(ex-cx0)*expBlend;cy0+=(ey-cy0)*expBlend;cz0+=(ez-cz0)*expBlend;lx=ex*expBlend;ly=ey*expBlend;}
@@ -960,7 +961,7 @@ function loop(now){
   if(!ldDone){const tg=ldReady?100:Math.min(86,(now-ldStart)/24);ldShown+=(tg-ldShown)*Math.min(1,dt*(ldReady?6:2.5));if(reduce&&ldReady)ldShown=100;
     if(ldReady&&ldShown>99.3&&now-ldStart>1500)openLoader();else{$('#ldNum').textContent=Math.min(99,Math.floor(ldShown));ldEl.style.setProperty('--lp',(Math.min(99,ldShown)/100).toFixed(3));}}
   /* the intro runs on accumulated frame time, so a startup hitch can't skip part of it */
-  if(introOn&&!reduce){introT+=dt;introG=clamp(introT/4.8,0,1);introP=clamp((introT-1.6)/1.8,0,1);}
+  if(introOn&&!reduce){introT+=dt;introG=clamp(introT/4.4,0,1);introP=clamp((introT-1.5)/1.8,0,1);}
   const fs=filmScroll();const past=scrollY>fs+innerHeight*0.35;
   document.body.classList.toggle('past',past);
   const target=clamp(scrollY/fs,0,1)*TMAX;
